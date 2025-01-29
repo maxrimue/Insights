@@ -10,6 +10,7 @@ import EventKit
 
 struct ContentView: View {
     @State var reminders: [EKReminder]?
+    @State var remindersPercentageDone: Double?
     @State var errorMsg: String?
     
     let remindersInterface = RemindersInterface()
@@ -18,40 +19,20 @@ struct ContentView: View {
         VStack {
             if (errorMsg != nil) {
                 Text(errorMsg!).foregroundStyle(.red)
-            } else if (reminders == nil) {
-                Text("No reminders loaded")
-            } else if (reminders != nil) {
-                List(reminders!, id: \.calendarItemIdentifier) { reminder in
-                    VStack(alignment: .leading) {
-                        Text(reminder.title ?? "No Title")
-                            .font(.headline)
-                        //                        if let dueDate = reminder.dueDateComponents?.date {
-                        //                            Text("Due: \(formattedDate(dueDate))")
-                        //                                .font(.subheadline)
-                        //                                .foregroundColor(.secondary)
-                        //                        }
-                        Text(reminder.debugDescription)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
+            } else {
+                MetricView(metric: "\(String((remindersPercentageDone ?? 0) * 100))%", metricDescription: "Of reminders due today are done")
             }
         }
         .padding()
         .task {
             do {
                 self.reminders = try await self.remindersInterface.fetchReminders()
+
+                self.remindersPercentageDone = try await self.remindersInterface.getPercentageOfTasksCompleted()
             } catch {
                 errorMsg = error.localizedDescription
             }
         }
-    }
-    
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
     }
 }
 

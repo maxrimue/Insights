@@ -12,7 +12,7 @@ struct MetricView: View {
     var metricDescription: String
     
     var body: some View {
-        VStack {
+        VStack(spacing: 5) {
             HStack {
                 Spacer()
                 
@@ -22,6 +22,7 @@ struct MetricView: View {
             }
             
             Text(metricDescription)
+                .foregroundStyle(.secondary)
         }
     }
 }

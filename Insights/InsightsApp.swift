@@ -11,8 +11,8 @@ import SwiftUI
 struct InsightsApp: App {
     var body: some Scene {
         WindowGroup {
-//            ContentView()
-            DebugView()
+            ContentView()
+//            DebugView()
         }
     }
 }

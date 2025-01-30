@@ -26,52 +26,52 @@ struct InsightsTests {
         }
     }
     
-    func createMockEventStoreWithReminders() -> MockEventStore {
+    func createMockReminder(ForEventStore eventStore: EKEventStore, title: String, dueDate: Date?, completionDate: Date?) -> EKReminder {
+        let mockReminder = EKReminder(eventStore: eventStore)
+        mockReminder.title = title
+        mockReminder.isCompleted = completionDate != nil
+        
+        if let dueDate = dueDate {
+            /// Creates a reminder pinned to hour/minute of day. Leave out to create an all-day reminder.
+            mockReminder.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: dueDate)
+        }
+        
+        if let completionDate = completionDate {
+            mockReminder.completionDate = completionDate
+        }
+        
+        return mockReminder
+    }
+    
+    struct MockReminder {
+        let dueDate: Date?
+        let completionDate: Date?
+    }
+    
+    func createMockEventStore(withReminders reminders: [MockReminder]) -> MockEventStore {
         let mockEventStore = MockEventStore()
-        
-        let mockReminder1 = EKReminder(eventStore: mockEventStore)
-        mockReminder1.title = "Reminder 1"
-        mockReminder1.isCompleted = true
-        mockReminder1.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day], from: today)
-        mockReminder1.completionDate = today
-        
-        let mockReminder2 = EKReminder(eventStore: mockEventStore)
-        mockReminder2.title = "Reminder 2"
-        mockReminder2.isCompleted = false
-        mockReminder2.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day], from: today)
-        mockReminder2.completionDate = nil
-        
-        let mockReminder3 = EKReminder(eventStore: mockEventStore)
-        mockReminder3.title = "Reminder 3"
-        mockReminder3.isCompleted = true
-        mockReminder3.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day], from: yesterday)
-        mockReminder3.completionDate = today
+        let mockReminders = reminders.enumerated().map { index, reminder in createMockReminder(ForEventStore: mockEventStore, title: "Mock Reminder \(index + 1)", dueDate: reminder.dueDate, completionDate: reminder.completionDate) }
 
-        let mockReminder4 = EKReminder(eventStore: mockEventStore)
-        mockReminder4.title = "Reminder 4"
-        mockReminder4.isCompleted = true
-        mockReminder4.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day], from: yesterday)
-        mockReminder4.completionDate = yesterday
-        
-        let mockReminder5 = EKReminder(eventStore: mockEventStore)
-        mockReminder5.title = "Reminder 5"
-        mockReminder5.isCompleted = false
-        mockReminder5.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day], from: yesterday)
-        
-        mockEventStore.mockReminders = [mockReminder1, mockReminder2, mockReminder3, mockReminder4, mockReminder5]
+        mockEventStore.mockReminders = mockReminders
         
         return mockEventStore
     }
     
-    @Test func getPercentageOfTasksCompleted() async throws {
-        let mockEventStore = createMockEventStoreWithReminders()
+    @Test func getRatioOfTasksCompleted() async throws {
+        let mockEventStore = createMockEventStore(withReminders: [
+            MockReminder(dueDate: today, completionDate: today),
+            MockReminder(dueDate: today, completionDate: nil),
+            MockReminder(dueDate: yesterday, completionDate: today),
+            MockReminder(dueDate: yesterday, completionDate: yesterday),
+            MockReminder(dueDate: yesterday, completionDate: nil),
+            MockReminder(dueDate: Calendar.current.date(byAdding: .hour, value: 1, to: today), completionDate: nil)
+        ])
         
         let remindersInterface = Insights.RemindersInterface()
         remindersInterface.eventStore = mockEventStore
         
-        let result = try await remindersInterface.getPercentageOfTasksCompleted()
+        let result = try await remindersInterface.getRatioOfTasksCompleted()
         
-        #expect(result == 0.5)
+        #expect(result.isEqual(to: 0.4))
     }
-    
 }

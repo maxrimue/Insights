@@ -23,10 +23,10 @@ class RemindersInterface {
             return false
         }
         
-        return date <= Date()
+        return date <= Date() || Calendar.current.isDateInToday(date)
     }
     
-    func getPercentageOfTasksCompleted() async throws -> Double {
+    func getRatioOfTasksCompleted() async throws -> Double {
         let reminders = try await fetchReminders() ?? []
         
         let remindersDueToday = reminders.filter({ isDateInOrBeforeToday($0.dueDateComponents?.date) && $0.isCompleted == false })

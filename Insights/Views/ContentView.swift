@@ -16,7 +16,9 @@ struct ContentView: View {
     let remindersInterface = RemindersInterface()
     
     var body: some View {
-        let remindersPercentageDone = (remindersRatioComplete ?? 0.0).formatted(.percent.precision(.fractionLength(0)))
+        let remindersRatioComplete = remindersInterface.getRatioOfTasksCompleted(reminders: reminders ?? [])
+        let remindersPercentageDone = remindersRatioComplete.formatted(.percent.precision(.fractionLength(0)))
+        let remindersOverdue = remindersInterface.getOverdueTasks(reminders: reminders ?? [])
         
         VStack {
             if (errorMsg != nil) {
@@ -25,14 +27,16 @@ struct ContentView: View {
                 MetricView(metric: String(remindersPercentageDone), metricDescription: "Of reminders due today are done.")
                     .padding()
                     .background(MetricBackground())
+                
+                MetricView(metric: String(remindersOverdue), metricDescription: "Tasks overdue today.")
+                    .padding()
+                    .background(MetricBackground())
             }
         }.frame(width: 200)
         .padding()
         .task {
             do {
                 self.reminders = try await self.remindersInterface.fetchReminders()
-
-                self.remindersRatioComplete = try await self.remindersInterface.getRatioOfTasksCompleted()
             } catch {
                 errorMsg = error.localizedDescription
             }

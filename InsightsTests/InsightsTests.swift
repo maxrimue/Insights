@@ -24,6 +24,10 @@ struct InsightsTests {
         override func fetchReminders(matching predicate: NSPredicate, completion: @escaping ([EKReminder]?) -> Void) -> Any {
             completion(mockReminders)
         }
+        
+        override func requestFullAccessToReminders() async throws -> Bool {
+            true
+        }
     }
     
     func createMockReminder(ForEventStore eventStore: EKEventStore, title: String, dueDate: Date?, completionDate: Date?) -> EKReminder {
@@ -70,8 +74,28 @@ struct InsightsTests {
         let remindersInterface = Insights.RemindersInterface()
         remindersInterface.eventStore = mockEventStore
         
-        let result = try await remindersInterface.getRatioOfTasksCompleted()
+        let reminders = try await remindersInterface.fetchReminders()!
+        let result = remindersInterface.getRatioOfTasksCompleted(reminders: reminders)
         
         #expect(result.isEqual(to: 0.4))
+    }
+    
+    @Test func getOverdueTasks() async throws {
+        let mockEventStore = createMockEventStore(withReminders: [
+            MockReminder(dueDate: today, completionDate: today),
+            MockReminder(dueDate: today, completionDate: nil),
+            MockReminder(dueDate: yesterday, completionDate: today),
+            MockReminder(dueDate: yesterday, completionDate: yesterday),
+            MockReminder(dueDate: yesterday, completionDate: nil),
+            MockReminder(dueDate: Calendar.current.date(byAdding: .hour, value: 1, to: today), completionDate: nil)
+        ])
+        
+        let remindersInterface = Insights.RemindersInterface()
+        remindersInterface.eventStore = mockEventStore
+        
+        let reminders = try await remindersInterface.fetchReminders()!
+        let result = remindersInterface.getOverdueTasks(reminders: reminders)
+        
+        #expect(result == 1)
     }
 }

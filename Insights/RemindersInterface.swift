@@ -18,23 +18,29 @@ class RemindersInterface {
         return Calendar.current.isDateInToday(date)
     }
     
-    func isDateInOrBeforeToday(_ date: Date?) -> Bool {
+    func isDateBeforeToday(_ date: Date?) -> Bool {
         guard let date = date else {
             return false
         }
         
-        return date <= Date() || Calendar.current.isDateInToday(date)
+        return date < Date() && !Calendar.current.isDateInToday(date)
     }
     
-    func getRatioOfTasksCompleted() async throws -> Double {
-        let reminders = try await fetchReminders() ?? []
-        
+    func isDateInOrBeforeToday(_ date: Date?) -> Bool {
+        isDateBeforeToday(date) || isDateInToday(date)
+    }
+    
+    func getRatioOfTasksCompleted(reminders: [EKReminder]) -> Double {
         let remindersDueToday = reminders.filter({ isDateInOrBeforeToday($0.dueDateComponents?.date) && $0.isCompleted == false })
         let remindersDoneToday = reminders.filter({ isDateInToday($0.completionDate) })
         
         let totalRemindersApplicableForToday = remindersDueToday.count + remindersDoneToday.count
         
         return Double(remindersDoneToday.count) / Double(totalRemindersApplicableForToday)
+    }
+    
+    func getOverdueTasks(reminders: [EKReminder]) -> Int {
+        reminders.filter({ isDateBeforeToday($0.dueDateComponents?.date) && $0.isCompleted == false }).count
     }
     
     func fetchReminders() async throws -> [EKReminder]? {

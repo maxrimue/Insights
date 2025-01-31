@@ -10,17 +10,17 @@ import SwiftUI
 struct MetricView: View {
     var metric: String
     var metricDescription: String
-    
+
     var body: some View {
         VStack(spacing: 5) {
             HStack {
                 Spacer()
-                
+
                 Text(metric)
                     .font(.title)
                     .monospacedDigit()
             }
-            
+
             Text(metricDescription)
                 .foregroundStyle(.secondary)
         }

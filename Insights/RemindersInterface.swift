@@ -9,53 +9,64 @@ import EventKit
 
 class RemindersInterface {
     var eventStore = EKEventStore()
-    
+
     func isDateInToday(_ date: Date?) -> Bool {
         guard let date = date else {
             return false
         }
-        
+
         return Calendar.current.isDateInToday(date)
     }
-    
+
     func isDateBeforeToday(_ date: Date?) -> Bool {
         guard let date = date else {
             return false
         }
-        
+
         return date < Date() && !Calendar.current.isDateInToday(date)
     }
-    
+
     func isDateInOrBeforeToday(_ date: Date?) -> Bool {
         isDateBeforeToday(date) || isDateInToday(date)
     }
-    
+
     func getRatioOfTasksCompleted(reminders: [EKReminder]) -> Double {
-        let remindersDueToday = reminders.filter({ isDateInOrBeforeToday($0.dueDateComponents?.date) && $0.isCompleted == false })
-        let remindersDoneToday = reminders.filter({ isDateInToday($0.completionDate) })
-        
-        let totalRemindersApplicableForToday = remindersDueToday.count + remindersDoneToday.count
-        
-        return Double(remindersDoneToday.count) / Double(totalRemindersApplicableForToday)
+        let remindersDueToday = reminders.filter({
+            isDateInOrBeforeToday($0.dueDateComponents?.date)
+                && $0.isCompleted == false
+        })
+        let remindersDoneToday = reminders.filter({
+            isDateInToday($0.completionDate)
+        })
+
+        let totalRemindersApplicableForToday =
+            remindersDueToday.count + remindersDoneToday.count
+
+        return Double(remindersDoneToday.count)
+            / Double(totalRemindersApplicableForToday)
     }
-    
+
     func getOverdueTasks(reminders: [EKReminder]) -> Int {
-        reminders.filter({ isDateBeforeToday($0.dueDateComponents?.date) && $0.isCompleted == false }).count
+        reminders.filter({
+            isDateBeforeToday($0.dueDateComponents?.date)
+                && $0.isCompleted == false
+        }).count
     }
-    
+
     func fetchReminders() async throws -> [EKReminder]? {
-        if (ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1") {
-            return nil
-        }
-        
         let granted = try await eventStore.requestFullAccessToReminders()
-        
+
         guard granted else {
-            let accessError = NSError(domain: "RemindersFetcher", code: 1, userInfo: [NSLocalizedDescriptionKey: "Access to reminders was not granted"])
-            
+            let accessError = NSError(
+                domain: "RemindersFetcher", code: 1,
+                userInfo: [
+                    NSLocalizedDescriptionKey:
+                        "Access to reminders was not granted"
+                ])
+
             throw accessError
         }
-        
+
         // Fetch reminders
         let predicate = self.eventStore.predicateForReminders(in: nil)
         return await withCheckedContinuation { continuation in
@@ -64,4 +75,66 @@ class RemindersInterface {
             }
         }
     }
+}
+
+class MockEventStore: EKEventStore {
+    var mockReminders: [EKReminder] = []
+
+    override func predicateForReminders(in calendars: [EKCalendar]?)
+        -> NSPredicate
+    {
+        return NSPredicate(value: true)
+    }
+
+    override func fetchReminders(
+        matching predicate: NSPredicate,
+        completion: @escaping ([EKReminder]?) -> Void
+    ) -> Any {
+        completion(mockReminders)
+    }
+
+    override func requestFullAccessToReminders() async throws -> Bool {
+        true
+    }
+}
+
+func createMockEventStore(withReminders reminders: [MockReminder])
+    -> MockEventStore
+{
+    let mockEventStore = MockEventStore()
+    let mockReminders = reminders.enumerated().map { index, reminder in
+        createMockReminder(
+            ForEventStore: mockEventStore, title: "Mock Reminder \(index + 1)",
+            dueDate: reminder.dueDate, completionDate: reminder.completionDate)
+    }
+
+    mockEventStore.mockReminders = mockReminders
+
+    return mockEventStore
+}
+
+struct MockReminder {
+    let dueDate: Date?
+    let completionDate: Date?
+}
+
+func createMockReminder(
+    ForEventStore eventStore: EKEventStore, title: String, dueDate: Date?,
+    completionDate: Date?
+) -> EKReminder {
+    let mockReminder = EKReminder(eventStore: eventStore)
+    mockReminder.title = title
+    mockReminder.isCompleted = completionDate != nil
+
+    if let dueDate = dueDate {
+        /// Creates a reminder pinned to hour/minute of day. Leave out to create an all-day reminder.
+        mockReminder.dueDateComponents = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute], from: dueDate)
+    }
+
+    if let completionDate = completionDate {
+        mockReminder.completionDate = completionDate
+    }
+
+    return mockReminder
 }

@@ -35,6 +35,7 @@ class RemindersInterface {
             isDateInOrBeforeToday($0.dueDateComponents?.date)
                 && $0.isCompleted == false
         })
+
         let remindersDoneToday = reminders.filter({
             isDateInToday($0.completionDate)
         })
@@ -67,7 +68,6 @@ class RemindersInterface {
             throw accessError
         }
 
-        // Fetch reminders
         let predicate = self.eventStore.predicateForReminders(in: nil)
         return await withCheckedContinuation { continuation in
             self.eventStore.fetchReminders(matching: predicate) { reminders in

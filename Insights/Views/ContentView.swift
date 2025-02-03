@@ -12,6 +12,7 @@ struct ContentView: View {
     @State var reminders: [EKReminder]?
     @State var remindersRatioComplete: Double?
     @State var errorMsg: String?
+    @Environment(\.openWindow) var openWindow
 
     var remindersInterface = RemindersInterface()
 
@@ -24,7 +25,14 @@ struct ContentView: View {
         let remindersOverdue = remindersInterface.getOverdueTasks(
             reminders: reminders ?? [])
 
-        VStack {
+        VStack(spacing: 10) {
+            HStack {
+                Spacer()
+                Button("Open Debug View") {
+                    openWindow(id: "debug")
+                }
+            }
+
             if errorMsg != nil {
                 Text(errorMsg!).foregroundStyle(.red)
             } else {

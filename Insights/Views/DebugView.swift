@@ -51,6 +51,12 @@ struct DebugView: View {
                             Text("No due date")
                         }
 
+                        if reminder.hasRecurrenceRules {
+                            Text(
+                                "Recurrence: \(reminder.recurrenceRules.debugDescription)"
+                            )
+                        }
+
                         Text(reminder.debugDescription)
                             .font(.subheadline)
                             .foregroundColor(.secondary)

@@ -12,7 +12,10 @@ struct InsightsApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-//            DebugView()
+        }
+
+        Window("Debug", id: "debug") {
+            DebugView()
         }
     }
 }

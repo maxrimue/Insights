@@ -37,15 +37,15 @@ struct ContentView: View {
                 Text(errorMsg!).foregroundStyle(.red)
             } else {
                 MetricView(
-                    metric: String(remindersPercentageDone),
-                    metricDescription: "Of reminders due today are done."
+                    text: String(remindersPercentageDone),
+                    description: "Of reminders due today are done"
                 )
                 .padding()
                 .background(MetricBackground())
 
                 MetricView(
-                    metric: String(remindersOverdue),
-                    metricDescription: "Tasks overdue today."
+                    text: String(remindersOverdue),
+                    description: "Tasks overdue today"
                 )
                 .padding()
                 .background(MetricBackground())

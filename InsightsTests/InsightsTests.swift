@@ -11,17 +11,22 @@ import Testing
 import EventKit
 
 struct InsightsTests {
-    private let today = Date()
-    private let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+    private func getDate(daysOffset days: Int = 0, hoursOffset hours: Int = 0) -> Date {
+        var date = Calendar.current.startOfDay(for: Date())
+        
+        date = Calendar.current.date(byAdding: .day, value: days, to: date)!
+        date = Calendar.current.date(byAdding: .hour, value: hours, to: date)!
+        return date
+    }
     
     @Test func getRatioOfTasksCompleted() async throws {
         let mockEventStore = createMockEventStore(withReminders: [
-            MockReminder(dueDate: today, completionDate: today),
-            MockReminder(dueDate: today, completionDate: nil),
-            MockReminder(dueDate: yesterday, completionDate: today),
-            MockReminder(dueDate: yesterday, completionDate: yesterday),
-            MockReminder(dueDate: yesterday, completionDate: nil),
-            MockReminder(dueDate: Calendar.current.date(byAdding: .hour, value: 1, to: today), completionDate: nil)
+            MockReminder(dueDate: getDate(), completionDate: getDate()),
+            MockReminder(dueDate: getDate(), completionDate: nil),
+            MockReminder(dueDate: getDate(daysOffset: -1), completionDate: getDate()),
+            MockReminder(dueDate: getDate(daysOffset: -1), completionDate: getDate(daysOffset: -1)),
+            MockReminder(dueDate: getDate(daysOffset: -1), completionDate: nil),
+            MockReminder(dueDate: getDate(hoursOffset: 1), completionDate: nil)
         ])
         
         let remindersInterface = Insights.RemindersInterface()
@@ -35,12 +40,12 @@ struct InsightsTests {
     
     @Test func getOverdueTasks() async throws {
         let mockEventStore = createMockEventStore(withReminders: [
-            MockReminder(dueDate: today, completionDate: today),
-            MockReminder(dueDate: today, completionDate: nil),
-            MockReminder(dueDate: yesterday, completionDate: today),
-            MockReminder(dueDate: yesterday, completionDate: yesterday),
-            MockReminder(dueDate: yesterday, completionDate: nil),
-            MockReminder(dueDate: Calendar.current.date(byAdding: .hour, value: 1, to: today), completionDate: nil)
+            MockReminder(dueDate: getDate(), completionDate: getDate()),
+            MockReminder(dueDate: getDate(), completionDate: nil),
+            MockReminder(dueDate: getDate(daysOffset: -1), completionDate: getDate()),
+            MockReminder(dueDate: getDate(daysOffset: -1), completionDate: getDate(daysOffset: -1)),
+            MockReminder(dueDate: getDate(daysOffset: -1), completionDate: nil),
+            MockReminder(dueDate: getDate(hoursOffset: 1), completionDate: nil)
         ])
         
         let remindersInterface = Insights.RemindersInterface()
@@ -50,5 +55,30 @@ struct InsightsTests {
         let result = remindersInterface.getOverdueTasks(reminders: reminders)
         
         #expect(result == 1)
+    }
+    
+    @Test func getDueTasksForLastSevenDays() async throws {
+        let mockEventStore = createMockEventStore(withReminders: [
+            MockReminder(dueDate: getDate(daysOffset: -7), completionDate: nil),
+            MockReminder(dueDate: getDate(daysOffset: -6), completionDate: getDate(daysOffset: -6)),
+            MockReminder(dueDate: getDate(daysOffset: -5), completionDate: getDate(daysOffset: -5)),
+            MockReminder(dueDate: getDate(daysOffset: -4), completionDate: getDate(daysOffset: -2)),
+            MockReminder(dueDate: getDate(daysOffset: -4), completionDate: getDate(daysOffset: -2)),
+            MockReminder(dueDate: getDate(daysOffset: -3), completionDate: getDate(daysOffset: -1)),
+            MockReminder(dueDate: getDate(daysOffset: -2), completionDate: getDate(daysOffset: -1)),
+            MockReminder(dueDate: getDate(daysOffset: -1), completionDate: nil),
+            MockReminder(dueDate: getDate(daysOffset: -1), completionDate: getDate(daysOffset: -1)),
+            MockReminder(dueDate: getDate(), completionDate: nil),
+            MockReminder(dueDate: getDate(daysOffset: 1), completionDate: nil)
+        ])
+        
+        let remindersInterface = Insights.RemindersInterface()
+        remindersInterface.eventStore = mockEventStore
+        
+        let reminders = try await remindersInterface.fetchReminders()!
+        let result = remindersInterface.getDueTasksForLastSevenDays(reminders: reminders)
+        
+        print(result)
+        #expect(result[getDate()] == 1)
     }
 }

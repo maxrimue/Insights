@@ -30,6 +30,19 @@ class RemindersInterface {
         isDateBeforeToday(date) || isDateInToday(date)
     }
 
+    func getNormalizedDate(forDaysInFuture days: Int = 0) -> Date {
+        let targetDate = Calendar.current.date(
+            byAdding: .day, value: days, to: Date())!
+        return Calendar.current.startOfDay(for: targetDate)
+    }
+
+    func getNormalizedDate(forDateComponents dateComponents: DateComponents)
+        -> Date
+    {
+        let targetDate = Calendar.current.date(from: dateComponents)!
+        return Calendar.current.startOfDay(for: targetDate)
+    }
+
     func getRatioOfTasksCompleted(reminders: [EKReminder]) -> Double {
         let remindersDueToday = reminders.filter({
             isDateInOrBeforeToday($0.dueDateComponents?.date)
@@ -52,6 +65,27 @@ class RemindersInterface {
             isDateBeforeToday($0.dueDateComponents?.date)
                 && $0.isCompleted == false
         }).count
+    }
+
+    func getDueTasksForLastSevenDays(reminders: [EKReminder]) -> [Date: Int] {
+        let today = getNormalizedDate()
+        let pastDays = (0..<7).map {
+            Calendar.current.date(byAdding: .day, value: -$0, to: today)!
+        }
+        var result: [Date: Int] = Dictionary(
+            uniqueKeysWithValues: pastDays.map { ($0, 0) })
+
+        reminders.forEach { reminder in
+            if let dueDateComponents = reminder.dueDateComponents {
+                let normalizedDueDate = getNormalizedDate(
+                    forDateComponents: dueDateComponents)
+                if result.keys.contains(normalizedDueDate) {
+                    result[normalizedDueDate, default: 0] += 1
+                }
+            }
+        }
+
+        return result
     }
 
     func fetchReminders() async throws -> [EKReminder]? {

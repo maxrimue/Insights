@@ -50,7 +50,7 @@ class RemindersInterface {
         })
 
         let remindersDoneToday = reminders.filter({
-            isDateInToday($0.completionDate)
+            isDateInToday($0.completionDate) && $0.dueDateComponents != nil
         })
 
         let totalRemindersApplicableForToday =

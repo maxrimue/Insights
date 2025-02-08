@@ -26,7 +26,8 @@ struct InsightsTests {
             MockReminder(dueDate: getDate(daysOffset: -1), completionDate: getDate()),
             MockReminder(dueDate: getDate(daysOffset: -1), completionDate: getDate(daysOffset: -1)),
             MockReminder(dueDate: getDate(daysOffset: -1), completionDate: nil),
-            MockReminder(dueDate: getDate(hoursOffset: 1), completionDate: nil)
+            MockReminder(dueDate: getDate(hoursOffset: 1), completionDate: nil),
+            MockReminder(dueDate: nil, completionDate: getDate())
         ])
         
         let remindersInterface = Insights.RemindersInterface()

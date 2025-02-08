@@ -16,14 +16,29 @@ struct ContentView: View {
 
     var remindersInterface = RemindersInterface()
 
-    var body: some View {
+    func getPercentageOfCompletedTasks() -> String {
         let remindersRatioComplete =
             remindersInterface.getRatioOfTasksCompleted(
                 reminders: reminders ?? [])
-        let remindersPercentageDone = remindersRatioComplete.formatted(
+        return remindersRatioComplete.formatted(
             .percent.precision(.fractionLength(0)))
+    }
+
+    func getOverdueRemindersOfLastSevenDays() -> [ChartDataEntry] {
+        return remindersInterface.getDueTasksForLastSevenDays(
+            reminders: reminders ?? []
+        ).sorted { $0.key < $1.key }.map { (key: Date, value: Int) in
+            ChartDataEntry(
+                xAxis: key, xAxisDescriptor: "Day", yAxis: value,
+                yAxisDescriptor: "Count")
+        }
+    }
+
+    var body: some View {
+        let remindersPercentageDone = getPercentageOfCompletedTasks()
         let remindersOverdue = remindersInterface.getOverdueTasks(
             reminders: reminders ?? [])
+        let remindersCountPastSevenDays = getOverdueRemindersOfLastSevenDays()
 
         VStack(spacing: 10) {
             HStack {
@@ -36,21 +51,31 @@ struct ContentView: View {
             if errorMsg != nil {
                 Text(errorMsg!).foregroundStyle(.red)
             } else {
-                MetricView(
-                    text: String(remindersPercentageDone),
-                    description: "Of reminders due today are done"
-                )
-                .padding()
-                .background(MetricBackground())
+                HStack {
+                    MetricView(
+                        text: String(remindersPercentageDone),
+                        description: "Of reminders due today are done"
+                    )
+                    .padding()
+                    .background(MetricBackground())
+
+                    MetricView(
+                        text: String(remindersOverdue),
+                        description: "Tasks overdue today"
+                    )
+                    .padding()
+                    .background(MetricBackground())
+                }
 
                 MetricView(
-                    text: String(remindersOverdue),
-                    description: "Tasks overdue today"
+                    chartData: remindersCountPastSevenDays,
+                    description:
+                        "Due reminders per day over the last seven days"
                 )
                 .padding()
                 .background(MetricBackground())
             }
-        }.frame(width: 200)
+        }.frame(width: 300)
             .padding()
             .task {
                 do {
@@ -79,7 +104,7 @@ struct MetricBackground: View {
                 byAdding: .day, value: -1, to: Date())!, completionDate: Date()),
         MockReminder(
             dueDate: Calendar.current.date(
-                byAdding: .day, value: -1, to: Date())!, completionDate: nil)
+                byAdding: .day, value: -1, to: Date())!, completionDate: nil),
     ])
 
     let remindersInterface = Insights.RemindersInterface()

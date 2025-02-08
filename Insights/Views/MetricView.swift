@@ -9,8 +9,11 @@ import Charts
 import SwiftUI
 
 struct ChartDataEntry {
-    var time: Date
-    var count: Int
+    var id: UUID = UUID()
+    var xAxis: Date
+    var xAxisDescriptor: String
+    var yAxis: Int
+    var yAxisDescriptor: String
 }
 
 private struct MetricTextView: View {
@@ -39,19 +42,31 @@ private struct MetricChartView: View {
 
     var body: some View {
         VStack(spacing: 5) {
-            Chart(chartData, id: \.time) {
+            Chart(chartData, id: \.id) {
                 LineMark(
-                    x: .value("Date", $0.time),
-                    y: .value("Count", $0.count)
+                    x: .value($0.xAxisDescriptor, $0.xAxis),
+                    y: .value($0.yAxisDescriptor, $0.yAxis)
+
                 )
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 .foregroundStyle(.tint)
-                .interpolationMethod(.cardinal)
-                .symbolSize(10)
+                .interpolationMethod(.linear)
+                //                .interpolationMethod(.cardinal)
+                //                .symbolSize(50)
+                //                .symbol(Circle().strokeBorder(lineWidth: 1))
+                .symbol(.circle)
             }
             .frame(height: 80)
             .chartYAxis(.visible)
-            .chartXAxis(.hidden)
+            .chartXAxis(.visible)
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .day, count: 1)) {
+                    AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+
+                    AxisGridLine()
+                    AxisTick()
+                }
+            }
 
             Text(description)
                 .foregroundStyle(.secondary)
@@ -92,17 +107,18 @@ struct MetricView: View {
 }
 
 #Preview("Chart") {
+    let today = Calendar.current.startOfDay(for: Date())
     let exampleChartData: [ChartDataEntry] = [
         ChartDataEntry(
-            time: Calendar.current.date(
-                byAdding: .day, value: -3, to: Date())!, count: 1),
+            xAxis: today,
+            xAxisDescriptor: "Day",
+            yAxis: 12,
+            yAxisDescriptor: "Due tasks"),
         ChartDataEntry(
-            time: Calendar.current.date(
-                byAdding: .day, value: -2, to: Date())!, count: 3),
-        ChartDataEntry(
-            time: Calendar.current.date(
-                byAdding: .day, value: -1, to: Date())!, count: 2),
-        ChartDataEntry(time: Date(), count: 4),
+            xAxis: Calendar.current.date(byAdding: .day, value: 1, to: today)!,
+            xAxisDescriptor: "Day",
+            yAxis: 9,
+            yAxisDescriptor: "Due tasks"),
     ]
 
     return MetricView(

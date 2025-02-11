@@ -30,11 +30,10 @@ struct InsightsTests {
             MockReminder(dueDate: nil, completionDate: getDate())
         ])
         
-        let remindersInterface = Insights.RemindersInterface()
-        remindersInterface.eventStore = mockEventStore
+        let remindersInterface = Insights.RemindersInterface(eventStore: mockEventStore)
         
-        let reminders = try await remindersInterface.fetchReminders()!
-        let result = remindersInterface.getRatioOfTasksCompleted(reminders: reminders)
+        try await remindersInterface.fetchReminders()
+        let result = remindersInterface.getRatioOfTasksCompleted()
         
         #expect(result.isEqual(to: 0.4))
     }
@@ -49,11 +48,10 @@ struct InsightsTests {
             MockReminder(dueDate: getDate(hoursOffset: 1), completionDate: nil)
         ])
         
-        let remindersInterface = Insights.RemindersInterface()
-        remindersInterface.eventStore = mockEventStore
+        let remindersInterface = Insights.RemindersInterface(eventStore: mockEventStore)
         
-        let reminders = try await remindersInterface.fetchReminders()!
-        let result = remindersInterface.getOverdueTasks(reminders: reminders)
+        try await remindersInterface.fetchReminders()
+        let result = remindersInterface.getOverdueTasks()
         
         #expect(result == 1)
     }
@@ -73,11 +71,10 @@ struct InsightsTests {
             MockReminder(dueDate: getDate(daysOffset: 1), completionDate: nil)
         ])
         
-        let remindersInterface = Insights.RemindersInterface()
-        remindersInterface.eventStore = mockEventStore
+        let remindersInterface = Insights.RemindersInterface(eventStore: mockEventStore)
         
-        let reminders = try await remindersInterface.fetchReminders()!
-        let result = remindersInterface.getDueTasksForLastSevenDays(reminders: reminders)
+        try await remindersInterface.fetchReminders()
+        let result = remindersInterface.getDueTasksForLastSevenDays()
         
         print(result)
         #expect(result[getDate()] == 1)

@@ -7,8 +7,17 @@
 
 import EventKit
 
-class RemindersInterface {
-    var eventStore = EKEventStore()
+class RemindersInterface: ObservableObject {
+    @Published var reminders: [EKReminder] = []
+    var eventStore: EKEventStore
+
+    init(eventStore: EKEventStore?) {
+        self.eventStore = eventStore ?? EKEventStore()
+    }
+
+    init() {
+        self.eventStore = EKEventStore()
+    }
 
     func isDateInToday(_ date: Date?) -> Bool {
         guard let date = date else {
@@ -43,7 +52,7 @@ class RemindersInterface {
         return Calendar.current.startOfDay(for: targetDate)
     }
 
-    func getRatioOfTasksCompleted(reminders: [EKReminder]) -> Double {
+    func getRatioOfTasksCompleted() -> Double {
         let remindersDueToday = reminders.filter({
             isDateInOrBeforeToday($0.dueDateComponents?.date)
                 && $0.isCompleted == false
@@ -60,14 +69,14 @@ class RemindersInterface {
             / Double(totalRemindersApplicableForToday)
     }
 
-    func getOverdueTasks(reminders: [EKReminder]) -> Int {
+    func getOverdueTasks() -> Int {
         reminders.filter({
             isDateBeforeToday($0.dueDateComponents?.date)
                 && $0.isCompleted == false
         }).count
     }
 
-    func getDueTasksForLastSevenDays(reminders: [EKReminder]) -> [Date: Int] {
+    func getDueTasksForLastSevenDays() -> [Date: Int] {
         let today = getNormalizedDate()
         let pastDays = (0..<7).map {
             Calendar.current.date(byAdding: .day, value: -$0, to: today)!
@@ -88,7 +97,7 @@ class RemindersInterface {
         return result
     }
 
-    func fetchReminders() async throws -> [EKReminder]? {
+    func fetchReminders() async throws {
         let granted = try await eventStore.requestFullAccessToReminders()
 
         guard granted else {
@@ -103,11 +112,13 @@ class RemindersInterface {
         }
 
         let predicate = self.eventStore.predicateForReminders(in: nil)
-        return await withCheckedContinuation { continuation in
-            self.eventStore.fetchReminders(matching: predicate) { reminders in
-                continuation.resume(returning: reminders)
-            }
-        }
+        reminders =
+            await withCheckedContinuation { continuation in
+                self.eventStore.fetchReminders(matching: predicate) {
+                    reminders in
+                    continuation.resume(returning: reminders)
+                }
+            } ?? []
     }
 }
 

@@ -9,25 +9,23 @@ import EventKit
 import SwiftUI
 
 struct ContentView: View {
-    @State var reminders: [EKReminder]?
     @State var remindersRatioComplete: Double?
     @State var errorMsg: String?
-    @Environment(\.openWindow) var openWindow
 
-    var remindersInterface = RemindersInterface()
+    @Environment(\.openWindow) var openWindow
+    @EnvironmentObject var remindersInterface: RemindersInterface
 
     func getPercentageOfCompletedTasks() -> String {
         let remindersRatioComplete =
-            remindersInterface.getRatioOfTasksCompleted(
-                reminders: reminders ?? [])
+            remindersInterface.getRatioOfTasksCompleted()
         return remindersRatioComplete.formatted(
             .percent.precision(.fractionLength(0)))
     }
 
     func getOverdueRemindersOfLastSevenDays() -> [ChartDataEntry] {
-        return remindersInterface.getDueTasksForLastSevenDays(
-            reminders: reminders ?? []
-        ).sorted { $0.key < $1.key }.map { (key: Date, value: Int) in
+        return remindersInterface.getDueTasksForLastSevenDays().sorted {
+            $0.key < $1.key
+        }.map { (key: Date, value: Int) in
             ChartDataEntry(
                 xAxis: key, xAxisDescriptor: "Day", yAxis: value,
                 yAxisDescriptor: "Count")
@@ -36,8 +34,7 @@ struct ContentView: View {
 
     var body: some View {
         let remindersPercentageDone = getPercentageOfCompletedTasks()
-        let remindersOverdue = remindersInterface.getOverdueTasks(
-            reminders: reminders ?? [])
+        let remindersOverdue = remindersInterface.getOverdueTasks()
         let remindersCountPastSevenDays = getOverdueRemindersOfLastSevenDays()
 
         VStack(spacing: 10) {
@@ -79,7 +76,7 @@ struct ContentView: View {
             .padding()
             .task {
                 do {
-                    self.reminders = try await self.remindersInterface
+                    try await self.remindersInterface
                         .fetchReminders()
                 } catch {
                     errorMsg = error.localizedDescription
@@ -107,8 +104,6 @@ struct MetricBackground: View {
                 byAdding: .day, value: -1, to: Date())!, completionDate: nil),
     ])
 
-    let remindersInterface = Insights.RemindersInterface()
-    remindersInterface.eventStore = mockEventStore
-
-    return ContentView(remindersInterface: remindersInterface)
+    return ContentView().environmentObject(
+        RemindersInterface(eventStore: mockEventStore))
 }

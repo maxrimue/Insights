@@ -9,23 +9,31 @@ import EventKit
 import SwiftUI
 
 struct DebugView: View {
-    @State var reminders: [EKReminder]?
     @State var searchResult: [EKReminder]?
     @State var searchPhrase: String = ""
-    let remindersInterface = RemindersInterface()
+    @EnvironmentObject var remindersInterface: RemindersInterface
 
     var body: some View {
         VStack {
-            TextField(
-                "Search for reminders...", text: $searchPhrase,
-                prompt: Text("Search for reminders...")
-            )
-            .textFieldStyle(.roundedBorder)
-            .padding(5)
+            HStack {
+                TextField(
+                    "Search for reminders...", text: $searchPhrase,
+                    prompt: Text("Search for reminders...")
+                )
+                .textFieldStyle(.roundedBorder)
+                
+                Button {
+                    Task {
+                        try! await remindersInterface.fetchReminders()
+                    }
+                } label: {
+                    Text("Fetch Reminders")
+                }
+            }.padding(5)
 
             List(
                 !searchPhrase.isEmpty
-                    ? (searchResult ?? []) : (reminders ?? []),
+                    ? (searchResult ?? []) : (remindersInterface.reminders),
                 id: \.calendarItemIdentifier
             ) { reminder in
                 let title = reminder.title ?? "No Title"
@@ -62,15 +70,9 @@ struct DebugView: View {
                             .foregroundColor(.secondary)
                     }
                 }
-            }.task {
-                let reminders = try? await remindersInterface.fetchReminders()
-
-                if let reminders {
-                    self.reminders = reminders
-                }
             }.onChange(of: searchPhrase) { _, newValue in
                 if !newValue.isEmpty {
-                    self.searchResult = reminders?.filter({
+                    self.searchResult = remindersInterface.reminders.filter({
                         $0.title.lowercased().contains(newValue.lowercased())
                     })
                 }
@@ -87,5 +89,17 @@ struct DebugView: View {
 }
 
 #Preview {
-    DebugView()
+    let mockEventStore = createMockEventStore(withReminders: [
+        MockReminder(dueDate: Date(), completionDate: Date()),
+        MockReminder(dueDate: Date(), completionDate: nil),
+        MockReminder(
+            dueDate: Calendar.current.date(
+                byAdding: .day, value: -1, to: Date())!, completionDate: Date()),
+        MockReminder(
+            dueDate: Calendar.current.date(
+                byAdding: .day, value: -1, to: Date())!, completionDate: nil),
+    ])
+
+    return DebugView().environmentObject(
+        RemindersInterface(eventStore: mockEventStore))
 }

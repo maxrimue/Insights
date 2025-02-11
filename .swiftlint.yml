@@ -1,3 +1,4 @@
 disabled_rules:
   - opening_brace
   - trailing_comma
+  - closure_parameter_position

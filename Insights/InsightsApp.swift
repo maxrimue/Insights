@@ -7,15 +7,41 @@
 
 import SwiftUI
 
-@main
-struct InsightsApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+#if DEBUG
 
-        Window("Debug", id: "debug") {
-            DebugView()
+    @main
+    struct InsightsApp: App {
+        @StateObject var remindersInterface = RemindersInterface(
+            eventStore: (ProcessInfo.processInfo.environment[
+                "XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+                ? createMockEventStore(withReminders: []) : nil))
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView().environmentObject(remindersInterface)
+            }
+
+            Window("Debug", id: "debug") {
+                DebugView().environmentObject(remindersInterface)
+            }
         }
     }
-}
+
+#else
+
+    @main
+    struct InsightsApp: App {
+        @StateObject var remindersInterface = RemindersInterface()
+
+        var body: some Scene {
+            WindowGroup {
+                ContentView().environmentObject(remindersInterface)
+            }
+
+            Window("Debug", id: "debug") {
+                DebugView().environmentObject(remindersInterface)
+            }
+        }
+    }
+
+#endif

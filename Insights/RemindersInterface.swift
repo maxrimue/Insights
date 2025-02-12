@@ -9,6 +9,7 @@ import EventKit
 
 class RemindersInterface: ObservableObject {
     @Published var reminders: [EKReminder] = []
+    @Published var isLoading: Bool = false
     var eventStore: EKEventStore
 
     init(eventStore: EKEventStore?) {
@@ -98,6 +99,7 @@ class RemindersInterface: ObservableObject {
     }
 
     func fetchReminders() async throws {
+        await updateIsLoading(true)
         let granted = try await eventStore.requestFullAccessToReminders()
 
         guard granted else {
@@ -112,13 +114,26 @@ class RemindersInterface: ObservableObject {
         }
 
         let predicate = self.eventStore.predicateForReminders(in: nil)
-        reminders =
+        let fetchedReminders =
             await withCheckedContinuation { continuation in
                 self.eventStore.fetchReminders(matching: predicate) {
                     reminders in
                     continuation.resume(returning: reminders)
                 }
             } ?? []
+
+        await updateReminders(reminders: fetchedReminders)
+        await updateIsLoading(false)
+    }
+
+    @MainActor
+    func updateReminders(reminders: [EKReminder]) {
+        self.reminders = reminders
+    }
+
+    @MainActor
+    func updateIsLoading(_ isLoading: Bool) {
+        self.isLoading = isLoading
     }
 }
 

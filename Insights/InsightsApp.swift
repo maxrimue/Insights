@@ -19,7 +19,7 @@ import SwiftUI
         var body: some Scene {
             WindowGroup {
                 ContentView().environmentObject(remindersInterface)
-            }
+            }.windowResizability(.contentSize)
 
             Window("Debug", id: "debug") {
                 DebugView().environmentObject(remindersInterface)
@@ -36,7 +36,7 @@ import SwiftUI
         var body: some Scene {
             WindowGroup {
                 ContentView().environmentObject(remindersInterface)
-            }
+            }.windowResizability(.contentSize)
 
             Window("Debug", id: "debug") {
                 DebugView().environmentObject(remindersInterface)

@@ -52,7 +52,7 @@ struct ContentView: View {
             if errorMsg != nil {
                 Text(errorMsg!).foregroundStyle(.red)
             } else {
-                HStack {
+                HStack(spacing: 10) {
                     MetricView(
                         text: String(remindersPercentageDone),
                         description: "Of reminders due today are done"

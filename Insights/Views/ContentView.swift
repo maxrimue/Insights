@@ -38,12 +38,16 @@ struct ContentView: View {
         let remindersCountPastSevenDays = getOverdueRemindersOfLastSevenDays()
 
         VStack(spacing: 10) {
-            HStack {
-                Spacer()
-                Button("Open Debug View") {
-                    openWindow(id: "debug")
+            #if DEBUG
+                HStack {
+                    Spacer()
+
+                    Button("Open Debug View") {
+                        openWindow(id: "debug")
+                    }
+
                 }
-            }
+            #endif
 
             if errorMsg != nil {
                 Text(errorMsg!).foregroundStyle(.red)
@@ -72,16 +76,17 @@ struct ContentView: View {
                 .padding()
                 .background(MetricBackground())
             }
-        }.frame(width: 300)
-            .padding()
-            .task {
-                do {
-                    try await self.remindersInterface
-                        .fetchReminders()
-                } catch {
-                    errorMsg = error.localizedDescription
-                }
+        }
+        .frame(width: 300)
+        .padding()
+        .task {
+            do {
+                try await self.remindersInterface
+                    .fetchReminders()
+            } catch {
+                errorMsg = error.localizedDescription
             }
+        }
     }
 }
 

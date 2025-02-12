@@ -21,10 +21,10 @@ struct DebugView: View {
                     prompt: Text("Search for reminders...")
                 )
                 .textFieldStyle(.roundedBorder)
-                
+
                 Button {
                     Task {
-                        try! await remindersInterface.fetchReminders()
+                        try await remindersInterface.fetchReminders()
                     }
                 } label: {
                     Text("Fetch Reminders")

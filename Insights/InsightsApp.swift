@@ -8,13 +8,18 @@
 import SwiftUI
 
 #if DEBUG
+    let runningInPreviews =
+        ProcessInfo.processInfo.environment[
+            "XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    let runningInUnitTests =
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"]
+        != nil
 
     @main
     struct InsightsApp: App {
         @StateObject var remindersInterface = RemindersInterface(
-            eventStore: (ProcessInfo.processInfo.environment[
-                "XCODE_RUNNING_FOR_PREVIEWS"] == "1"
-                ? createMockEventStore(withReminders: []) : nil))
+            eventStore: runningInPreviews || runningInUnitTests
+                ? createMockEventStore(withReminders: []) : nil)
 
         var body: some Scene {
             WindowGroup {

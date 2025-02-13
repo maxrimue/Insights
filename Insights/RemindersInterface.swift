@@ -9,6 +9,9 @@ import EventKit
 
 class RemindersInterface: ObservableObject {
     @Published var reminders: [EKReminder] = []
+    @Published var ratioOfTasksCompleted: Double?
+    @Published var countOfOverdueTasks: Int?
+    @Published var countsOfTasksCompletedByDay: [Date: Int]?
     @Published var isLoading: Bool = false
     var eventStore: EKEventStore
 
@@ -53,7 +56,7 @@ class RemindersInterface: ObservableObject {
         return Calendar.current.startOfDay(for: targetDate)
     }
 
-    func getRatioOfTasksCompleted() -> Double {
+    private func getRatioOfTasksCompleted() -> Double {
         let remindersDueToday = reminders.filter({
             isDateInOrBeforeToday($0.dueDateComponents?.date)
                 && $0.isCompleted == false
@@ -70,14 +73,14 @@ class RemindersInterface: ObservableObject {
             / Double(totalRemindersApplicableForToday)
     }
 
-    func getOverdueTasks() -> Int {
+    private func getCountOfOverdueTasks() -> Int {
         reminders.filter({
             isDateBeforeToday($0.dueDateComponents?.date)
                 && $0.isCompleted == false
         }).count
     }
 
-    func getDueTasksForLastSevenDays() -> [Date: Int] {
+    private func getCountsOfTasksCompletedByDay() -> [Date: Int] {
         let today = getNormalizedDate()
         let pastDays = (0..<7).map {
             Calendar.current.date(byAdding: .day, value: -$0, to: today)!
@@ -129,6 +132,9 @@ class RemindersInterface: ObservableObject {
     @MainActor
     func updateReminders(reminders: [EKReminder]) {
         self.reminders = reminders
+        self.ratioOfTasksCompleted = getRatioOfTasksCompleted()
+        self.countOfOverdueTasks = getCountOfOverdueTasks()
+        self.countsOfTasksCompletedByDay = getCountsOfTasksCompletedByDay()
     }
 
     @MainActor

@@ -36,16 +36,26 @@ struct InsightsTests {
             MockReminder(dueDate: nil, completionDate: getDate()),
         ])
 
+        var ratioOfTasksCompleted: [Double?] = []
+        var cancellables: Set<AnyCancellable> = []
         let remindersInterface = Insights.RemindersInterface(
             eventStore: mockEventStore)
 
-        try await remindersInterface.fetchReminders()
-        let result = remindersInterface.getRatioOfTasksCompleted()
+        #expect(remindersInterface.ratioOfTasksCompleted == nil)
 
-        #expect(result.isEqual(to: 0.4))
+        remindersInterface.$ratioOfTasksCompleted
+            .sink { value in
+                ratioOfTasksCompleted.append(value)
+            }
+            .store(in: &cancellables)
+
+        try await remindersInterface.fetchReminders()
+
+        #expect(ratioOfTasksCompleted.count == 2)
+        #expect(ratioOfTasksCompleted.elementsEqual([nil, 0.4]))
     }
 
-    @Test func getOverdueTasks() async throws {
+    @Test func getCountOfOverdueTasks() async throws {
         let mockEventStore = createMockEventStore(withReminders: [
             MockReminder(dueDate: getDate(), completionDate: getDate()),
             MockReminder(dueDate: getDate(), completionDate: nil),
@@ -58,16 +68,26 @@ struct InsightsTests {
             MockReminder(dueDate: getDate(hoursOffset: 1), completionDate: nil),
         ])
 
+        var countOfOverdueTasks: [Int?] = []
+        var cancellables: Set<AnyCancellable> = []
         let remindersInterface = Insights.RemindersInterface(
             eventStore: mockEventStore)
 
-        try await remindersInterface.fetchReminders()
-        let result = remindersInterface.getOverdueTasks()
+        #expect(remindersInterface.countOfOverdueTasks == nil)
 
-        #expect(result == 1)
+        remindersInterface.$countOfOverdueTasks
+            .sink { value in
+                countOfOverdueTasks.append(value)
+            }
+            .store(in: &cancellables)
+
+        try await remindersInterface.fetchReminders()
+
+        #expect(countOfOverdueTasks.count == 2)
+        #expect(countOfOverdueTasks.elementsEqual([nil, 1]))
     }
 
-    @Test func getDueTasksForLastSevenDays() async throws {
+    @Test func getCountsOfTasksCompletedByDay() async throws {
         let mockEventStore = createMockEventStore(withReminders: [
             MockReminder(dueDate: getDate(daysOffset: -7), completionDate: nil),
             MockReminder(
@@ -96,13 +116,32 @@ struct InsightsTests {
             MockReminder(dueDate: getDate(daysOffset: 1), completionDate: nil),
         ])
 
+        var countsOfTasksCompletedByDayValues: [[Date: Int]?] = []
+        var cancellables: Set<AnyCancellable> = []
         let remindersInterface = Insights.RemindersInterface(
             eventStore: mockEventStore)
 
-        try await remindersInterface.fetchReminders()
-        let result = remindersInterface.getDueTasksForLastSevenDays()
+        #expect(remindersInterface.countsOfTasksCompletedByDay == nil)
 
-        #expect(result[getDate()] == 1)
+        remindersInterface.$countsOfTasksCompletedByDay
+            .sink { value in
+                countsOfTasksCompletedByDayValues.append(value)
+            }
+            .store(in: &cancellables)
+
+        try await remindersInterface.fetchReminders()
+
+        let result =
+            countsOfTasksCompletedByDayValues.indices.contains(1)
+            ? countsOfTasksCompletedByDayValues[1] : nil
+
+        #expect(countsOfTasksCompletedByDayValues.count == 2)
+        #expect(result != nil)
+        #expect(
+            result?.first(where: { (key: Date, value: Int) in
+                return key == getDate(daysOffset: -1) && value == 2
+            }) != nil)
+
     }
 
     @Test func setsLoadingState() async throws {

@@ -15,15 +15,23 @@ struct ContentView: View {
     @Environment(\.openWindow) var openWindow
     @EnvironmentObject var remindersInterface: RemindersInterface
 
-    func getPercentageOfCompletedTasks() -> String {
-        let remindersRatioComplete =
-            remindersInterface.getRatioOfTasksCompleted()
-        return remindersRatioComplete.formatted(
+    func getPercentageOfCompletedTasks(_ ratio: Double?) -> String? {
+        guard let ratio = ratio else {
+            return nil
+        }
+
+        return ratio.formatted(
             .percent.precision(.fractionLength(0)))
     }
 
-    func getOverdueRemindersOfLastSevenDays() -> [ChartDataEntry] {
-        return remindersInterface.getDueTasksForLastSevenDays().sorted {
+    func mapOverdueRemindersToChart(_ overdueReminders: [Date: Int]?)
+        -> [ChartDataEntry]?
+    {
+        guard let overdueReminders = overdueReminders else {
+            return nil
+        }
+
+        return overdueReminders.sorted {
             $0.key < $1.key
         }.map { (key: Date, value: Int) in
             ChartDataEntry(
@@ -33,49 +41,61 @@ struct ContentView: View {
     }
 
     var body: some View {
-        let remindersPercentageDone = getPercentageOfCompletedTasks()
-        let remindersOverdue = remindersInterface.getOverdueTasks()
-        let remindersCountPastSevenDays = getOverdueRemindersOfLastSevenDays()
+        let remindersPercentageDone =
+            getPercentageOfCompletedTasks(
+                remindersInterface.ratioOfTasksCompleted) ?? "--"
+        let remindersOverdue =
+            remindersInterface.countOfOverdueTasks != nil
+            ? String(remindersInterface.countOfOverdueTasks!) : "--"
+        let remindersCountPastSevenDays = mapOverdueRemindersToChart(
+            remindersInterface.countsOfTasksCompletedByDay)
 
-        VStack(spacing: 10) {
-            #if DEBUG
-                HStack {
-                    Spacer()
+        ZStack {
+            if remindersInterface.isLoading == true {
+                ProgressView()
+            }
 
-                    Button("Open Debug View") {
-                        openWindow(id: "debug")
+            VStack(spacing: 10) {
+                #if DEBUG
+                    HStack {
+                        Spacer()
+
+                        Button("Open Debug View") {
+                            openWindow(id: "debug")
+                        }.disabled(remindersInterface.isLoading)
+
+                    }
+                #endif
+
+                if errorMsg != nil {
+                    Text(errorMsg!).foregroundStyle(.red)
+                } else {
+                    HStack(spacing: 10) {
+                        MetricView(
+                            text: remindersPercentageDone,
+                            description: "Of reminders due today are done"
+                        )
+                        .padding()
+                        .background(MetricBackground())
+
+                        MetricView(
+                            text: String(remindersOverdue),
+                            description: "Tasks overdue today"
+                        )
+                        .padding()
+                        .background(MetricBackground())
                     }
 
-                }
-            #endif
-
-            if errorMsg != nil {
-                Text(errorMsg!).foregroundStyle(.red)
-            } else {
-                HStack(spacing: 10) {
                     MetricView(
-                        text: String(remindersPercentageDone),
-                        description: "Of reminders due today are done"
-                    )
-                    .padding()
-                    .background(MetricBackground())
-
-                    MetricView(
-                        text: String(remindersOverdue),
-                        description: "Tasks overdue today"
+                        chartData: remindersCountPastSevenDays ?? [],
+                        description:
+                            "Due reminders per day over the last seven days"
                     )
                     .padding()
                     .background(MetricBackground())
                 }
-
-                MetricView(
-                    chartData: remindersCountPastSevenDays,
-                    description:
-                        "Due reminders per day over the last seven days"
-                )
-                .padding()
-                .background(MetricBackground())
             }
+            .blendMode(remindersInterface.isLoading == true ? .color : .normal)
         }
         .frame(width: 300)
         .padding()

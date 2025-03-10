@@ -28,11 +28,13 @@ jobs:
           -project Insights.xcodeproj \
           -scheme Insights \
           -destination 'platform=macOS' \
+          -skipPackagePluginValidation \
           CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
-      - name: Run Unit Tests
+      - name: Unit Tests
         run: |
           xcodebuild test \
           -project Insights.xcodeproj \
           -scheme Insights \
           -destination 'platform=macOS' \
+          -skipPackagePluginValidation \
           CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO

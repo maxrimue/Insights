@@ -14,8 +14,8 @@ jobs:
       - name: GitHub Action for SwiftLint
         uses: norio-nomura/action-swiftlint@3.2.1
   build:
-    name: Build and Test default scheme
-    runs-on: macos-latest
+    name: build and test
+    runs-on: macos-15-arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
